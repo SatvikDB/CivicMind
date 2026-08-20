@@ -1,0 +1,260 @@
+🏗️ CivicMind AI – Team Structure
+                         TECH LEAD
+                           YOU
+                            |
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+     FRONTEND            BACKEND              AI/ML
+        │                   │                   │
+    ┌───┴───┐           ┌───┴───┐           ┌───┴───┐
+Person 1  Person 2    Person 3  Person 4   Person 5 Person 6
+        │                   │                   │
+        └────────── Person 7: Integration / QA ──────────┘
+
+However, to make the work equal and practical, I recommend this distribution:
+
+👩‍💻 Person 1 — Frontend: Landing Page + Navigation
+Responsibilities
+
+Build:
+
+Landing Page
+Hero section
+Problem/Solution section
+Features section
+How it works
+Navigation bar
+Footer
+Responsive design
+Pages/Components
+frontend/src/
+├── pages/
+│   └── LandingPage.jsx
+│
+├── components/
+│   ├── Navbar.jsx
+│   ├── Hero.jsx
+│   ├── Features.jsx
+│   ├── HowItWorks.jsx
+│   └── Footer.jsx
+Tech
+React
+Vite
+CSS/Tailwind
+Deliverable
+
+A professional homepage with navigation links.
+
+👩‍💻 Person 2 — Frontend: Complaint Submission Module
+Responsibilities
+
+Build the complaint submission system UI.
+
+Fields:
+
+Name
+Complaint Title
+Description
+Category
+Location Name
+Map location
+Also build
+Form validation
+Submit button
+Success message
+AI analysis result page
+Components
+pages/
+├── SubmitComplaint.jsx
+└── ComplaintResult.jsx
+
+
+components/
+├── ComplaintForm.jsx
+└── AnalysisResult.jsx
+API Integration
+
+This person connects to:
+
+POST /complaints
+👩‍💻 Person 3 — Frontend: Dashboard + Charts
+Responsibilities
+
+Build the administrator dashboard.
+
+Dashboard cards
+Total Complaints
+High Priority
+Potential Duplicates
+Resolved Complaints
+Charts
+
+Using Chart.js:
+
+Complaint Category Chart
+Priority Distribution
+Complaint Trends
+Components
+pages/
+└── Dashboard.jsx
+
+
+components/
+├── StatCards.jsx
+├── CategoryChart.jsx
+├── PriorityChart.jsx
+├── TrendChart.jsx
+└── SmartInsights.jsx
+API Integration
+GET /dashboard/stats
+GET /dashboard/analytics
+👩‍💻 Person 4 — Backend + Database Developer
+Responsibilities
+
+This person handles the core backend.
+
+Build
+FastAPI application
+API routes
+SQLite database
+SQLAlchemy models
+CRUD operations
+Complaint storage
+APIs
+POST /complaints
+GET /complaints
+GET /complaints/{id}
+PUT /complaints/{id}/status
+GET /health
+Files
+backend/
+├── main.py
+├── database.py
+├── models.py
+├── schemas.py
+└── crud.py
+Important
+
+This person should create the database structure first because other backend modules depend on it.
+
+🤖 Person 5 — AI/NLP Developer
+Responsibilities
+
+This is the most important AI module.
+
+Build AI features
+1. Automatic Category Detection
+
+Example:
+
+"There is water leaking near the road"
+
+Output:
+
+Water
+2. Duplicate Detection
+
+Use:
+
+Sentence Transformers
+Embeddings
+Cosine Similarity
+
+Example:
+
+Complaint A
+"There is a pothole near the college"
+
+
+Complaint B
+"Road is badly damaged near the college gate"
+
+Output:
+
+Potential Duplicate
+Similarity: 85%
+Files
+backend/
+├── ai_engine.py
+└── similarity.py
+🧠 Person 6 — Priority + Recommendation Engine
+Responsibilities
+
+Build the decision intelligence layer.
+
+Features
+Severity Detection
+Low
+Medium
+High
+Critical
+Sentiment Analysis
+Neutral
+Negative
+Critical
+Priority Calculation
+Priority Score =
+Severity
++ Duplicate Frequency
++ Safety Risk
++ Sentiment
+
+Output:
+
+Priority Score: 87/100
+Priority Level: HIGH
+Recommendation System
+
+Example:
+
+Category: Road
+Severity: High
+
+
+Recommended Action:
+Immediately inspect the road,
+place warning signs and schedule repair.
+Files
+backend/
+├── priority_engine.py
+├── recommendation_engine.py
+└── sentiment_engine.py
+🗺️ Person 7 — Maps + Complaint Management + Integration
+
+This is a good independent module.
+
+Responsibilities
+Interactive Map
+
+Using:
+
+Leaflet
+React Leaflet
+OpenStreetMap
+
+Show:
+
+Complaint markers
+Complaint category
+Priority
+Status
+Complaint Management
+
+Build:
+
+pages/
+├── ComplaintMap.jsx
+├── Complaints.jsx
+└── ComplaintDetails.jsx
+
+Features:
+
+Search complaints
+Filter by category
+Filter by status
+Sort by priority
+Update complaint status
+API
+GET /map/complaints
+GET /complaints
+PUT /complaints/{id}/status
