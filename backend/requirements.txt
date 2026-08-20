@@ -1,0 +1,32 @@
+# ──────────────────────────────────────────────────────────────────────
+# CivicMind AI — Python Dependencies
+# Person 5 (AI/NLP) + Person 6 (Priority + Recommendation Engine)
+# ──────────────────────────────────────────────────────────────────────
+
+# ── CORE (zero-config, always install) ──────────────────────────────────
+# No external deps required for the fallback pipeline.
+# The pipeline runs 100% out of the box with Python 3.10+.
+
+# ── OPTIONAL UPGRADES (install for better accuracy) ─────────────────────
+
+# Person 5: Semantic duplicate detection (replaces TF-IDF fallback)
+# ↳ Downloads paraphrase-MiniLM-L6-v2 (~22MB) on first use
+sentence-transformers>=2.6.0
+
+# Person 6: Better sentiment analysis (replaces lexicon fallback)
+textblob>=0.18.0
+
+# ── Person 4 Backend (FastAPI) ───────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+sqlalchemy>=2.0.0
+pydantic>=2.0.0
+
+# ── Utilities ────────────────────────────────────────────────────────────
+python-multipart>=0.0.9      # for FastAPI file uploads
+python-dotenv>=1.0.0          # for .env config
+aiofiles>=23.0.0              # for async file handling
+
+# ── Dev / Testing ─────────────────────────────────────────────────────────
+pytest>=8.0.0
+httpx>=0.27.0                 # for FastAPI test client
