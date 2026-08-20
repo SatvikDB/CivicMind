@@ -1,6 +1,6 @@
 # CivicMind AI — Backend Implementation Guide v2
 
-> **Team:** Person 4 (Core Backend) + Person 5 (AI: Category + Duplicate) + Person 6 (AI: Priority + Sentiment + Recommendation)
+> **Team:** Person 6A (Backend: DB + Models + Schemas) + Person 6B (Backend: CRUD + API Routes) + Person 7 (AI/ML: Engine + Models)
 > **Stack:** Python, FastAPI, MongoDB (via Motor), Sentence Transformers, scikit-learn
 > **Goal:** Build a production-ready backend for a civic complaint management system with AI-powered analysis
 > **Database:** MongoDB (NoSQL, document-based)
@@ -13,9 +13,9 @@
 2. [Project Structure](#2-project-structure)
 3. [Tech Stack & Dependencies](#3-tech-stack--dependencies)
 4. [Database Schema (MongoDB)](#4-database-schema-mongodb)
-5. [Person 4 — Core Backend](#5-person-4--core-backend)
-6. [Person 5 — Category Detection + Duplicate Detection](#6-person-5--category-detection--duplicate-detection)
-7. [Person 6 — Priority + Sentiment + Recommendation](#7-person-6--priority--sentiment--recommendation)
+5. [Person 6A — Backend: DB + Models + Schemas](#5-person-6a--backend-db--models--schemas)
+6. [Person 6B — Backend: CRUD + API Routes](#6-person-6b--backend-crud--api-routes)
+7. [Person 7 — AI/ML Engine](#7-person-7--aiml-engine)
 8. [API Reference](#8-api-reference)
 9. [Integration Contract](#9-integration-contract)
 10. [Sequence Diagrams](#10-sequence-diagrams)
@@ -39,15 +39,17 @@ graph TB
     end
 
     subgraph Backend["Backend (FastAPI — All Routes in main.py)"]
-        subgraph Core["Core Layer"]
-            MAIN["main.py<br/>(All API routes + CORS)"]
+        subgraph Person6A["Person 6A — DB + Models + Schemas"]
             DBMOD["database.py<br/>(Motor client)"]
             MDL["models.py<br/>(Pydantic document models)"]
             SCH["schemas.py<br/>(Request/Response schemas)"]
+        end
+        subgraph Person6B["Person 6B — CRUD + API Routes"]
+            MAIN["main.py<br/>(All API routes + CORS)"]
             CRUD["crud.py<br/>(Async MongoDB operations)"]
         end
-        subgraph AI["AI Engine Layer"]
-            AE["ai_engine.py"]
+        subgraph Person7["Person 7 — AI/ML Engine"]
+            AE["ai_engine.py<br/>(Orchestrator)"]
             SIM["similarity.py"]
             PRI["priority_engine.py"]
             SENT["sentiment_engine.py"]
@@ -76,8 +78,8 @@ graph TB
 flowchart LR
     A[Citizen Submits Complaint] --> B[Frontend validates form]
     B --> C[POST /api/complaints]
-    C --> D[Person 4: Validate & insert into MongoDB]
-    D --> E[Person 5 + 6: AI Analysis Pipeline]
+    C --> D[Person 6B: Validate & insert into MongoDB]
+    D --> E[Person 7: AI Analysis Pipeline]
     E --> F{Duplicate?}
     F -->|Yes| G[Flag as duplicate, link to parent]
     F -->|No| H[Continue]
@@ -115,23 +117,23 @@ backend/
 
 ```mermaid
 graph LR
-    subgraph Person4["Person 4 — Core Backend"]
+    subgraph Person6A["Person 6A — DB + Models + Schemas"]
         direction TB
-        MA[main.py]
         DBA[database.py]
         MLA[models.py]
         SA[schemas.py]
+    end
+
+    subgraph Person6B["Person 6B — CRUD + API Routes"]
+        direction TB
+        MA[main.py]
         CA[crud.py]
     end
 
-    subgraph Person5["Person 5 — Category + Duplicate"]
+    subgraph Person7["Person 7 — AI/ML Engine"]
         direction TB
         AE[ai_engine.py]
         SIM[similarity.py]
-    end
-
-    subgraph Person6["Person 6 — Priority + Sentiment + Recommendation"]
-        direction TB
         PRI[priority_engine.py]
         SEN[sentiment_engine.py]
         REC[recommendation_engine.py]
@@ -142,11 +144,15 @@ graph LR
     AE -.->|"calls"| SEN
     AE -.->|"calls"| REC
 
-    MA -.->|"imports & calls"| AE
+    CA -.->|"imports & calls"| AE
+    MA -.->|"uses"| CA
+    MA -.->|"uses"| DBA
+    MA -.->|"uses"| MLA
+    MA -.->|"uses"| SA
 
-    style Person4 fill:#1a1a2e,stroke:#e94560,color:#fff
-    style Person5 fill:#16213e,stroke:#0f3460,color:#fff
-    style Person6 fill:#0f3460,stroke:#e94560,color:#fff
+    style Person6A fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Person6B fill:#16213e,stroke:#0f3460,color:#fff
+    style Person7 fill:#0f3460,stroke:#e94560,color:#fff
 ```
 
 ---
@@ -166,7 +172,7 @@ python-multipart==0.0.6
 motor==3.3.2
 pymongo==4.6.1
 
-# AI/ML (Person 5 + Person 6)
+# AI/ML (Person 7)
 sentence-transformers==2.2.2
 scikit-learn==1.3.2
 torch==2.1.0
@@ -222,23 +228,23 @@ Each document in the `complaints` collection follows this structure:
 | Field | MongoDB Type | Default | Owner | Description |
 |-------|-------------|---------|-------|-------------|
 | `_id` | `ObjectId` | auto | MongoDB | Auto-generated unique identifier |
-| `name` | `string` | — | Person 4 | Citizen's name |
-| `title` | `string` | — | Person 4 | Complaint title |
-| `description` | `string` | — | Person 4 | Full complaint text |
-| `category` | `string` | `"Unknown"` | **Person 5** | AI-detected category |
-| `location_name` | `string` | — | Person 4 | Human-readable location |
-| `latitude` | `double` | `None` | Person 4 | Map coordinate |
-| `longitude` | `double` | `None` | Person 4 | Map coordinate |
-| `status` | `string` | `"Pending"` | Person 4 | Pending / In Progress / Resolved |
-| `priority_score` | `double` | `0.0` | **Person 6** | Calculated 0–100 score |
-| `priority_level` | `string` | `"Low"` | **Person 6** | Low / Medium / High / Critical |
-| `sentiment` | `string` | `"Neutral"` | **Person 6** | Neutral / Negative / Critical |
-| `recommended_action` | `string` | `""` | **Person 6** | AI-generated action suggestion |
-| `is_duplicate` | `bool` | `False` | **Person 5** | Whether flagged as duplicate |
-| `duplicate_of` | `string` | `None` | **Person 5** | `_id` of parent complaint if duplicate |
-| `similarity_score` | `double` | `0.0` | **Person 5** | Cosine similarity to parent |
-| `created_at` | `datetime` | `utcnow` | Person 4 | Creation timestamp |
-| `updated_at` | `datetime` | `utcnow` | Person 4 | Last update timestamp |
+| `name` | `string` | — | 6A | Citizen's name |
+| `title` | `string` | — | 6A | Complaint title |
+| `description` | `string` | — | 6A | Full complaint text |
+| `category` | `string` | `"Unknown"` | **7** | AI-detected category |
+| `location_name` | `string` | — | 6A | Human-readable location |
+| `latitude` | `double` | `None` | 6A | Map coordinate |
+| `longitude` | `double` | `None` | 6A | Map coordinate |
+| `status` | `string` | `"Pending"` | 6B | Pending / In Progress / Resolved |
+| `priority_score` | `double` | `0.0` | **7** | Calculated 0–100 score |
+| `priority_level` | `string` | `"Low"` | **7** | Low / Medium / High / Critical |
+| `sentiment` | `string` | `"Neutral"` | **7** | Neutral / Negative / Critical |
+| `recommended_action` | `string` | `""` | **7** | AI-generated action suggestion |
+| `is_duplicate` | `bool` | `False` | **7** | Whether flagged as duplicate |
+| `duplicate_of` | `string` | `None` | **7** | `_id` of parent complaint if duplicate |
+| `similarity_score` | `double` | `0.0` | **7** | Cosine similarity to parent |
+| `created_at` | `datetime` | `utcnow` | 6B | Creation timestamp |
+| `updated_at` | `datetime` | `utcnow` | 6B | Last update timestamp |
 
 ### MongoDB Indexes (Recommended)
 
@@ -265,7 +271,11 @@ stateDiagram-v2
 
 ---
 
-## 5. Person 4 — Core Backend
+## 5. Person 6A — Backend: DB + Models + Schemas
+
+> **Owns:** `database.py`, `models.py`, `schemas.py`
+> **Role:** Database connection, Pydantic document models, request/response schemas
+> **Depends on:** Nothing (can start immediately)
 
 ### 5.1 `database.py`
 
@@ -431,7 +441,17 @@ class AnalyticsResponse(BaseModel):
     trend_data: list[TrendPoint]
 ```
 
-### 5.4 `crud.py`
+> **Person 6A is done.** Hand off `database.py`, `models.py`, `schemas.py` to Person 6B.
+
+---
+
+## 6. Person 6B — Backend: CRUD + API Routes
+
+> **Owns:** `crud.py`, `main.py`
+> **Role:** Async MongoDB CRUD operations, all API route handlers, CORS, lifespan
+> **Depends on:** Person 6A's files + Person 7's `ai_engine.py`
+
+### 6.1 `crud.py`
 
 ```python
 from datetime import datetime, timedelta
@@ -523,21 +543,18 @@ async def get_dashboard_stats() -> dict:
 async def get_analytics() -> dict:
     db = get_db()
 
-    # Category distribution
     cat_cursor = db.complaints.aggregate([
         {"$group": {"_id": "$category", "count": {"$sum": 1}}}
     ])
     cat_docs = await cat_cursor.to_list(length=50)
     category_dist = [{"category": d["_id"], "count": d["count"]} for d in cat_docs]
 
-    # Priority distribution
     pri_cursor = db.complaints.aggregate([
         {"$group": {"_id": "$priority_level", "count": {"$sum": 1}}}
     ])
     pri_docs = await pri_cursor.to_list(length=50)
     priority_dist = [{"level": d["_id"], "count": d["count"]} for d in pri_docs]
 
-    # Trend data (last 30 days)
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
     trend_cursor = db.complaints.aggregate([
         {"$match": {"created_at": {"$gte": thirty_days_ago}}},
@@ -602,7 +619,7 @@ async def get_map_complaints() -> list[dict]:
     ]
 ```
 
-### 5.5 `main.py`
+### 6.2 `main.py`
 
 ```python
 from contextlib import asynccontextmanager
@@ -737,11 +754,15 @@ async def analyze(request: AnalyzeRequest):
 
 ---
 
-## 6. Person 5 — Category Detection + Duplicate Detection
+## 7. Person 7 — AI/ML Engine
 
-### 6.1 `ai_engine.py` — Orchestrator
+> **Owns:** `ai_engine.py`, `similarity.py`, `sentiment_engine.py`, `priority_engine.py`, `recommendation_engine.py`
+> **Role:** All AI/ML sub-modules — category detection, duplicate detection, priority scoring, sentiment analysis, recommendation generation
+> **Depends on:** Nothing (can start immediately, fully independent)
 
-This is the **single entry point** that Person 4 calls from `main.py`.
+### 7.1 `ai_engine.py` — Orchestrator
+
+> This is the **single entry point** that Person 6B's `main.py` calls.
 
 ```python
 from similarity import find_duplicates
@@ -774,7 +795,7 @@ def detect_category(text: str) -> str:
 
 def analyze_complaint(complaint_text: str, existing_complaints: list[dict]) -> dict:
     """
-    Main AI pipeline. Called by Person 4 after complaint creation.
+    Main AI pipeline. Called by Person 6B after complaint creation.
 
     Args:
         complaint_text: The description of the new complaint
@@ -809,7 +830,7 @@ def analyze_complaint(complaint_text: str, existing_complaints: list[dict]) -> d
     }
 ```
 
-### 6.2 `similarity.py` — Duplicate Detection
+### 7.2 `similarity.py` — Duplicate Detection
 
 ```python
 from sentence_transformers import SentenceTransformer
@@ -855,11 +876,7 @@ def find_duplicates(
 
 > **Note:** `duplicate_of` is now a `str` (MongoDB ObjectId) instead of `int`.
 
----
-
-## 7. Person 6 — Priority + Sentiment + Recommendation
-
-### 7.1 `sentiment_engine.py`
+### 7.3 `sentiment_engine.py`
 
 ```python
 CRITICAL_KEYWORDS = [
@@ -889,7 +906,7 @@ def analyze_sentiment(text: str) -> str:
     return "Neutral"
 ```
 
-### 7.2 `priority_engine.py`
+### 7.4 `priority_engine.py`
 
 ```python
 SAFETY_CATEGORIES = {"Road", "Public Safety", "Infrastructure"}
@@ -947,7 +964,7 @@ def calculate_priority(
     return total, level
 ```
 
-### 7.3 `recommendation_engine.py`
+### 7.5 `recommendation_engine.py`
 
 ```python
 RECOMMENDATIONS = {
@@ -1096,18 +1113,18 @@ def recommend_action(category: str, priority_level: str) -> str:
 
 ```mermaid
 graph LR
-    subgraph Person4["Person 4 calls"]
+    subgraph Person6B["Person 6B calls"]
         A["analyze_complaint(text, existing)"]
     end
 
-    subgraph Person5["Person 5 + 6 export"]
+    subgraph Person7["Person 7 exports"]
         B["analyze_complaint() -> dict"]
     end
 
     A -->|"import from ai_engine"| B
 
-    style Person4 fill:#1a1a2e,stroke:#e94560,color:#fff
-    style Person5 fill:#16213e,stroke:#0f3460,color:#fff
+    style Person6B fill:#1a1a2e,stroke:#e94560,color:#fff
+    style Person7 fill:#16213e,stroke:#0f3460,color:#fff
 ```
 
 ### Interface Contract
@@ -1138,27 +1155,25 @@ gantt
     dateFormat  X
     axisFormat %s
 
-    section Person 4 (Core)
+    section Person 6A (DB + Models + Schemas)
     database.py (Motor setup)        :a1, 0, 2
     models.py + schemas.py           :a2, 0, 2
-    crud.py (async MongoDB ops)      :a3, after a2, 3
-    main.py (all routes + CORS)      :a4, after a3, 2
-    Testing                          :a5, after a4, 2
 
-    section Person 5 (Category + Duplicate)
-    ai_engine.py (skeleton)          :b1, 0, 1
-    similarity.py                    :b2, 0, 3
-    ai_engine.py (full orchestrator) :b3, after b2, 1
-    Testing                          :b4, after b3, 2
+    section Person 6B (CRUD + API Routes)
+    crud.py (async MongoDB ops)      :b1, after a2, 3
+    main.py (all routes + CORS)      :b2, after b1, 2
+    Testing                          :b3, after b2, 2
 
-    section Person 6 (Priority + Sentiment + Recommendation)
-    sentiment_engine.py              :c1, 0, 2
-    priority_engine.py               :c2, 0, 2
-    recommendation_engine.py         :c3, 0, 2
-    Testing                          :c4, after c3, 1
+    section Person 7 (AI/ML Engine)
+    similarity.py                    :c1, 0, 3
+    sentiment_engine.py              :c2, 0, 2
+    priority_engine.py               :c3, 0, 2
+    recommendation_engine.py         :c4, 0, 2
+    ai_engine.py (orchestrator)      :c5, 0, 1
+    Testing                          :c6, after c4, 1
 
     section Merge
-    Wire AI into POST /complaints    :merge1, after a4, 1
+    Wire AI into POST /complaints    :merge1, after b2, 1
     Integration testing              :merge2, after merge1, 2
 ```
 
@@ -1337,26 +1352,26 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    START([Start]) --> P4[Person 4: Create database.py]
-    START --> P5[Person 5: Create ai_engine.py skeleton]
-    START --> P6[Person 6: Create sentiment_engine.py]
+    START([Start]) --> P6A[Person 6A: Create database.py]
+    START --> P7[Person 7: Create ai_engine.py skeleton]
 
-    P4 --> P4A[Create models.py — Pydantic document models]
-    P4A --> P4B[Create schemas.py — Request/Response schemas]
-    P4B --> P4C[Create crud.py — Async MongoDB operations]
-    P4C --> P4D[Create main.py — All routes + CORS + lifespan]
+    P6A --> P6A1[Create models.py — Pydantic document models]
+    P6A1 --> P6A2[Create schemas.py — Request/Response schemas]
 
-    P5 --> P5A[Create similarity.py — SentenceTransformer]
-    P5A --> P5B[Create ai_engine.py — Full orchestrator]
+    P7 --> P7A[Create similarity.py — SentenceTransformer]
+    P7 --> P7B[Create sentiment_engine.py]
+    P7 --> P7C[Create priority_engine.py]
+    P7 --> P7D[Create recommendation_engine.py]
+    P7A --> P7E[Create ai_engine.py — Full orchestrator]
+    P7B --> P7E
+    P7C --> P7E
+    P7D --> P7E
 
-    P6 --> P6A[Create priority_engine.py]
-    P6 --> P6B[Create recommendation_engine.py]
-    P6A --> P6C[All Person 6 files complete]
-    P6B --> P6C
+    P6A2 --> P6B[Person 6B: Create crud.py — Async MongoDB ops]
+    P6B --> P6B1[Create main.py — All routes + CORS + lifespan]
 
-    P4D --> MERGE[MERGE: Wire analyze_complaint into POST /api/complaints]
-    P5B --> MERGE
-    P6C --> MERGE
+    P6B1 --> MERGE[MERGE: Wire analyze_complaint into POST /api/complaints]
+    P7E --> MERGE
 
     MERGE --> TEST[Integration Testing]
     TEST --> DONE([Backend Ready])
@@ -1446,9 +1461,12 @@ flowchart LR
 ```mermaid
 graph TB
     subgraph Backend["Backend Team"]
-        P4[Person 4: Core APIs]
-        P5[Person 5: Category + Duplicate]
-        P6[Person 6: Priority + Sentiment + Rec]
+        P6A[Person 6A: DB + Models + Schemas]
+        P6B[Person 6B: CRUD + API Routes]
+    end
+
+    subgraph AIML["AI/ML Team"]
+        P7[Person 7: AI Engine]
     end
 
     subgraph Frontend["Frontend Team"]
@@ -1457,32 +1475,24 @@ graph TB
         F3[Person 3: Dashboard]
     end
 
-    subgraph AIML["AI/ML Team (Advisory)"]
-        M1[Person 5-alt: NLP Models]
-        M2[Person 6-alt: Priority Research]
-    end
-
     subgraph QA["Integration / QA"]
-        Q1[Person 7: Maps + Integration]
+        Q1[Person 7-alt: Maps + Integration]
     end
 
-    F2 -->|"POST /api/complaints"| P4
-    F2 -->|"GET /api/complaints/:id"| P4
-    F3 -->|"GET /api/dashboard/stats"| P4
-    F3 -->|"GET /api/dashboard/analytics"| P4
-    Q1 -->|"GET /api/map/complaints"| P4
-    Q1 -->|"PUT /api/complaints/:id/status"| P4
-    Q1 -->|"GET /api/complaints/search"| P4
+    F2 -->|"POST /api/complaints"| P6B
+    F2 -->|"GET /api/complaints/:id"| P6B
+    F3 -->|"GET /api/dashboard/stats"| P6B
+    F3 -->|"GET /api/dashboard/analytics"| P6B
+    Q1 -->|"GET /api/map/complaints"| P6B
+    Q1 -->|"PUT /api/complaints/:id/status"| P6B
+    Q1 -->|"GET /api/complaints/search"| P6B
 
-    M1 -.->|"Provides better models"| P5
-    M2 -.->|"Provides scoring weights"| P6
-
-    P4 -->|"calls"| P5
-    P4 -->|"calls"| P6
+    P6B -->|"calls analyze_complaint()"| P7
+    P6B -->|"uses"| P6A
 
     style Backend fill:#1a1a2e,stroke:#e94560,color:#fff
-    style Frontend fill:#16213e,stroke:#0f3460,color:#fff
-    style AIML fill:#1a1a2e,stroke:#e94560,color:#fff
+    style AIML fill:#16213e,stroke:#0f3460,color:#fff
+    style Frontend fill:#1a1a2e,stroke:#e94560,color:#fff
     style QA fill:#16213e,stroke:#0f3460,color:#fff
 ```
 
@@ -1502,7 +1512,7 @@ graph TB
 
 ### 12.3 AI/ML Team Handoff
 
-If the AI/ML team improves models, they swap files Person 5 and Person 6 own:
+If the AI/ML team improves models, they swap files Person 7 owns:
 
 ```mermaid
 flowchart LR
@@ -1541,18 +1551,20 @@ flowchart LR
 
 ### Phase 1: Foundation (Day 1)
 
-| Person 4 | Person 5 | Person 6 |
-|----------|----------|----------|
-| `database.py` — Motor client + indexes | `ai_engine.py` — skeleton with `detect_category()` | `sentiment_engine.py` — keyword-based |
-| `models.py` — Pydantic document models | `similarity.py` — SentenceTransformer setup | `priority_engine.py` — scoring formula |
-| `schemas.py` — All Pydantic schemas | | `recommendation_engine.py` — lookup table |
+| Person 6A (DB + Models + Schemas) | Person 6B (CRUD + API Routes) | Person 7 (AI/ML Engine) |
+|-----------------------------------|-------------------------------|-------------------------|
+| `database.py` — Motor client + indexes | — (waits for 6A) | `ai_engine.py` — skeleton with `detect_category()` |
+| `models.py` — Pydantic document models | | `similarity.py` — SentenceTransformer setup |
+| `schemas.py` — All Pydantic schemas | | `sentiment_engine.py` — keyword-based |
+| | | `priority_engine.py` — scoring formula |
+| | | `recommendation_engine.py` — lookup table |
 
 ### Phase 2: API + AI (Day 2)
 
-| Person 4 | Person 5 | Person 6 |
-|----------|----------|----------|
-| `crud.py` — All async MongoDB operations | `similarity.py` — Full duplicate detection | Test all AI functions standalone |
-| `main.py` — All routes + CORS + lifespan | `ai_engine.py` — Full orchestrator | |
+| Person 6A (DB + Models + Schemas) | Person 6B (CRUD + API Routes) | Person 7 (AI/ML Engine) |
+|-----------------------------------|-------------------------------|-------------------------|
+| Support 6B with schema questions | `crud.py` — All async MongoDB operations | `ai_engine.py` — Full orchestrator |
+| | `main.py` — All routes + CORS + lifespan | Test all AI functions standalone |
 
 ### Phase 3: Merge + Test (Day 3)
 
@@ -1741,13 +1753,13 @@ AI_MODEL_THRESHOLD=0.70
 ## Quick Reference Card
 
 ```
-Person 4: main.py, database.py, models.py, schemas.py, crud.py
-Person 5: ai_engine.py, similarity.py
-Person 6: priority_engine.py, sentiment_engine.py, recommendation_engine.py
-Contract: analyze_complaint(text, existing) -> dict
-Port:     8000
-Docs:     http://localhost:8000/docs
-DB:       MongoDB — civicmind.complaints
-Mongo:    mongodb://localhost:27017
-IDs:      ObjectId (24-char hex string)
+Person 6A: database.py, models.py, schemas.py
+Person 6B: crud.py, main.py
+Person 7:  ai_engine.py, similarity.py, sentiment_engine.py, priority_engine.py, recommendation_engine.py
+Contract:  analyze_complaint(text, existing) -> dict
+Port:      8000
+Docs:      http://localhost:8000/docs
+DB:        MongoDB — civicmind.complaints
+Mongo:     mongodb://localhost:27017
+IDs:       ObjectId (24-char hex string)
 ```
