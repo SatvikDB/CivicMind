@@ -44,6 +44,7 @@ class ComplaintDocument(BaseModel):
 
 
 def complaint_doc_to_dict(doc: dict) -> dict:
+    """Convert a MongoDB document to a flat dict for Pydantic response."""
     doc["id"] = str(doc.pop("_id"))
     if "duplicate_of" in doc and doc["duplicate_of"] is not None:
         doc["duplicate_of"] = str(doc["duplicate_of"])
