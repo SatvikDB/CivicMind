@@ -1,3 +1,42 @@
+# Environment files (any .env anywhere)
+**/.env
+**/.env.*
+**/.env.local
+.env
+.env.*
+.env.local
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Node.js
+node_modules/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# MongoDB data (local)
+data/db/
 # Python
 __pycache__/
 *.pyc

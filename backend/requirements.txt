@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+motor
+pymongo
+pydantic
+python-dotenv
+sentence-transformers
+scikit-learn
+numpy
