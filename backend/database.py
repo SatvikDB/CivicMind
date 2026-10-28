@@ -3,10 +3,8 @@ import certifi
 from pymongo import MongoClient
 from pymongo.collection import Collection
 
-MONGO_URI = os.environ.get(
-    "NGO_URI",
-"-"
-)
+
+
 
 # Use "civicmind" as the database name within the cluster
 DB_NAME = "civicmind"
