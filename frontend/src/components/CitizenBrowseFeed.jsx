@@ -230,6 +230,20 @@ export default function CitizenBrowseFeed({ setActiveTab, currentUser, onOpenAut
                 {selectedComplaint.description}
               </p>
 
+              {/* Citizen complaint photo */}
+              {selectedComplaint.complaint_photo && (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold text-slate-500 dark:text-gray-400 flex items-center gap-1">
+                    📸 Evidence Photo (submitted by citizen):
+                  </p>
+                  <img
+                    src={selectedComplaint.complaint_photo}
+                    alt="Citizen complaint evidence"
+                    className="w-full h-48 object-cover rounded-xl border border-slate-300 dark:border-gray-700 shadow-sm"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="glass-card p-3 rounded-xl">
                   <p className="text-[10px] text-slate-500 dark:text-gray-400">AI Priority Score</p>
@@ -277,19 +291,31 @@ export default function CitizenBrowseFeed({ setActiveTab, currentUser, onOpenAut
               />
             </div>
 
-            {/* Resolution Proof Showcase if Resolved */}
+            {/* Resolution Proof — only shown when Resolved AND photo uploaded */}
             {selectedComplaint.status === 'Resolved' && selectedComplaint.resolution_photo && (
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 space-y-2">
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-800/60 space-y-3">
                 <div className="flex items-center space-x-2 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Authority Resolution Proof Photo & Note</span>
+                  <span>Authority Resolution Proof</span>
+                  <span className="ml-auto text-[10px] font-mono text-emerald-600 dark:text-emerald-500">
+                    {selectedComplaint.resolved_at ? new Date(selectedComplaint.resolved_at).toLocaleString() : ''}
+                  </span>
                 </div>
-                <img 
-                  src={selectedComplaint.resolution_photo} 
-                  alt="Proof" 
-                  className="w-full h-36 object-cover rounded-lg border border-emerald-300 dark:border-emerald-800"
+                <img
+                  src={selectedComplaint.resolution_photo}
+                  alt="Resolution proof"
+                  className="w-full h-44 object-cover rounded-xl border border-emerald-300 dark:border-emerald-800 shadow-md"
                 />
-                <p className="text-xs text-slate-800 dark:text-gray-200 italic">"{selectedComplaint.resolution_note || 'Completed by municipal unit.'}"</p>
+                {selectedComplaint.resolution_note && (
+                  <p className="text-xs text-slate-700 dark:text-gray-200 italic bg-white dark:bg-gray-900/60 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                    "{selectedComplaint.resolution_note}"
+                  </p>
+                )}
+                {selectedComplaint.resolved_by && (
+                  <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                    ✓ Resolved by: {selectedComplaint.resolved_by}
+                  </p>
+                )}
               </div>
             )}
 

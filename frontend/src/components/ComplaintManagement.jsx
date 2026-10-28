@@ -24,23 +24,21 @@ import {
   Check
 } from 'lucide-react';
 
-const sampleProofPhotos = [
-  { label: 'Road Paved', url: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Pipe Sealed', url: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Light Fixed', url: 'https://images.unsplash.com/photo-1508873696983-2df515122519?auto=format&fit=crop&w=600&q=80' },
-  { label: 'Waste Cleared', url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=600&q=80' }
-];
+// Sample proof photos are fetched from resolved complaints in the DB (real base64 images).
+// Populated once on first load via loadSamplePhotos().
+let cachedSamplePhotos = null;
 
 export default function ComplaintManagement({ setActiveTab }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
+  const [sampleProofPhotos, setSampleProofPhotos] = useState([]);
 
   const [resolutionForm, setResolutionForm] = useState({
     resolved_by: 'Eng. Ramesh V (Ward Officer)',
     resolution_note: '',
-    resolution_photo: sampleProofPhotos[0].url
+    resolution_photo: ''
   });
   const [resolving, setResolving] = useState(false);
 
@@ -92,6 +90,32 @@ export default function ComplaintManagement({ setActiveTab }) {
     loadData();
   }, [category, priority, status, sortBy]);
 
+  // Load sample proof photos from resolved complaints (real images stored in DB)
+  useEffect(() => {
+    if (cachedSamplePhotos) {
+      setSampleProofPhotos(cachedSamplePhotos);
+      setResolutionForm(prev => ({
+        ...prev,
+        resolution_photo: cachedSamplePhotos[0]?.url || ''
+      }));
+      return;
+    }
+    fetchComplaints({ status: 'Resolved' }).then(resolved => {
+      const samples = resolved
+        .filter(c => c.resolution_photo)
+        .slice(0, 4)
+        .map(c => ({
+          label: c.category,
+          url: c.resolution_photo
+        }));
+      cachedSamplePhotos = samples;
+      setSampleProofPhotos(samples);
+      if (samples.length > 0) {
+        setResolutionForm(prev => ({ ...prev, resolution_photo: samples[0].url }));
+      }
+    }).catch(() => {});
+  }, []);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     loadData();
@@ -117,7 +141,7 @@ export default function ComplaintManagement({ setActiveTab }) {
     try {
       const updated = await resolveComplaint(selectedComplaint.id, {
         status: 'Resolved',
-        resolution_photo: resolutionForm.resolution_photo || sampleProofPhotos[0].url,
+        resolution_photo: resolutionForm.resolution_photo || null,
         resolution_note: resolutionForm.resolution_note || 'Issue inspected, repaired and verified by municipal authority.',
         resolved_by: resolutionForm.resolved_by || 'Ward Officer'
       });
@@ -343,6 +367,20 @@ export default function ComplaintManagement({ setActiveTab }) {
               <p className="text-xs text-gray-200 light:text-slate-800 bg-gray-900/60 light:bg-slate-100 p-3 rounded-xl border border-gray-800 light:border-slate-200 leading-relaxed">
                 {selectedComplaint.description}
               </p>
+
+              {/* Citizen complaint photo */}
+              {selectedComplaint.complaint_photo && (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold text-gray-400 light:text-slate-500 flex items-center gap-1">
+                    📸 Citizen Evidence Photo:
+                  </p>
+                  <img
+                    src={selectedComplaint.complaint_photo}
+                    alt="Citizen complaint evidence"
+                    className="w-full h-52 object-cover rounded-xl border border-gray-700 light:border-slate-300 shadow-md"
+                  />
+                </div>
+              )}
             </div>
 
             {/* SECTION 2: 📍 Exact Map Location */}
@@ -456,7 +494,8 @@ export default function ComplaintManagement({ setActiveTab }) {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {selectedComplaint.resolution_photo && (
+                    {/* Resolution photo — only shown after authority action */}
+                    {selectedComplaint.resolution_photo ? (
                       <div className="space-y-1">
                         <p className="text-[11px] font-semibold text-gray-400 light:text-slate-600">📷 Resolution Proof Photo:</p>
                         <img 
@@ -464,6 +503,10 @@ export default function ComplaintManagement({ setActiveTab }) {
                           alt="Resolution Proof" 
                           className="w-full h-40 object-cover rounded-xl border border-emerald-800/60 light:border-emerald-300 shadow-md"
                         />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-40 rounded-xl border border-dashed border-emerald-700/40 light:border-emerald-300 bg-emerald-950/10">
+                        <p className="text-xs text-gray-500 light:text-slate-400 text-center px-4">No proof photo uploaded yet</p>
                       </div>
                     )}
 
@@ -534,6 +577,18 @@ export default function ComplaintManagement({ setActiveTab }) {
                         </button>
                       ))}
                     </div>
+
+                    {/* Live preview of selected/uploaded photo */}
+                    {resolutionForm.resolution_photo && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-[10px] text-gray-400 light:text-slate-500">📷 Photo Preview:</p>
+                        <img
+                          src={resolutionForm.resolution_photo}
+                          alt="Resolution preview"
+                          className="w-full h-36 object-cover rounded-xl border border-indigo-700/50 light:border-indigo-300 shadow-md"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div>

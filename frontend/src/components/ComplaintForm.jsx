@@ -16,7 +16,8 @@ import {
   Tag,
   FileText,
   Search,
-  Clock
+  Clock,
+  Camera
 } from 'lucide-react';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -84,6 +85,7 @@ export default function ComplaintForm({ setActiveTab }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [complaintPhoto, setComplaintPhoto] = useState(null); // Base64 data-URI
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [aiResult, setAiResult] = useState(null);
@@ -160,7 +162,8 @@ export default function ComplaintForm({ setActiveTab }) {
       location: formData.location || `Lat ${mapPosition.lat.toFixed(5)}, Lng ${mapPosition.lng.toFixed(5)}`,
       latitude: mapPosition.lat,
       longitude: mapPosition.lng,
-      description: formData.description
+      description: formData.description,
+      complaint_photo: complaintPhoto || null,
     };
 
     try {
@@ -174,14 +177,17 @@ export default function ComplaintForm({ setActiveTab }) {
   };
 
   const handleReset = () => {
-    setFormData({
-      name: '',
-      title: '',
-      category: 'Road',
-      location: '',
-      description: ''
-    });
+    setFormData({ name: '', title: '', category: 'Road', location: '', description: '' });
+    setComplaintPhoto(null);
     setAiResult(null);
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setComplaintPhoto(reader.result);
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -373,6 +379,36 @@ export default function ComplaintForm({ setActiveTab }) {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl bg-white dark:bg-gray-900/80 border border-slate-300 dark:border-gray-700 text-slate-900 dark:text-white text-sm placeholder-slate-400 dark:placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors shadow-sm"
               />
+            </div>
+
+            {/* Photo Upload */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Attach Photo Evidence <span className="text-slate-400 dark:text-gray-500 font-normal normal-case">(optional)</span>
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="w-full text-sm text-slate-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer"
+              />
+              {complaintPhoto && (
+                <div className="mt-3 relative">
+                  <img
+                    src={complaintPhoto}
+                    alt="Complaint evidence preview"
+                    className="w-full h-48 object-cover rounded-xl border-2 border-indigo-400/50 shadow-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setComplaintPhoto(null)}
+                    className="absolute top-2 right-2 bg-red-600 text-white rounded-lg px-2 py-0.5 text-xs font-bold hover:bg-red-500"
+                  >
+                    Remove
+                  </button>
+                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1">✓ Photo attached — will be visible to authorities when they inspect this complaint.</p>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}

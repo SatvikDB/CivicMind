@@ -3,11 +3,12 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from datetime import datetime, timedelta
 from collections import Counter
+import base64
 
 import schemas
 from ai_engine import process_complaint_ai
@@ -107,6 +108,54 @@ def health_check():
 
 
 # ─────────────────────────────────────────────
+# Image Upload Endpoint
+# ─────────────────────────────────────────────
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
+
+@app.post("/upload/image")
+async def upload_image(file: UploadFile = File(...)):
+    """
+    Accept a JPEG/PNG/WEBP image, store it as Base64 in MongoDB, and return
+    a data-URI that can be used directly as an <img src="..."> value.
+    """
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file type '{file.content_type}'. Allowed: jpeg, png, webp."
+        )
+
+    raw = await file.read()
+
+    if len(raw) > MAX_IMAGE_SIZE_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large ({len(raw) // 1024} KB). Max allowed: 5 MB."
+        )
+
+    b64 = base64.b64encode(raw).decode("utf-8")
+    data_uri = f"data:{file.content_type};base64,{b64}"
+
+    # Persist in a separate 'images' collection for reuse / audit
+    from database import db
+    result = db["images"].insert_one({
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size_bytes": len(raw),
+        "data_uri": data_uri,
+        "uploaded_at": datetime.utcnow(),
+    })
+
+    return {
+        "image_id": str(result.inserted_id),
+        "filename": file.filename,
+        "size_kb": round(len(raw) / 1024, 1),
+        "data_uri": data_uri,   # use this as resolution_photo value
+    }
+
+
+# ─────────────────────────────────────────────
 # Auth Endpoints
 # ─────────────────────────────────────────────
 
@@ -168,6 +217,7 @@ def create_complaint(payload: schemas.ComplaintCreate):
         "location": payload.location,
         "latitude": payload.latitude,
         "longitude": payload.longitude,
+        "complaint_photo": payload.complaint_photo,
         "severity": ai_res["severity"],
         "sentiment": ai_res["sentiment"],
         "similarity_score": ai_res["similarity_score"],

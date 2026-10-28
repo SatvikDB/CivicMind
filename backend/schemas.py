@@ -28,6 +28,7 @@ class ComplaintCreate(BaseModel):
     location: str
     latitude: float
     longitude: float
+    complaint_photo: Optional[str] = None  # Base64 data-URI uploaded by citizen
 
 class ComplaintStatusUpdate(BaseModel):
     status: str
@@ -47,6 +48,7 @@ class ComplaintResponse(BaseModel):
     location: str
     latitude: float
     longitude: float
+    complaint_photo: Optional[str] = None  # Photo uploaded by citizen at submission
     severity: str
     sentiment: str
     similarity_score: float
